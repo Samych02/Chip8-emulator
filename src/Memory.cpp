@@ -2,10 +2,8 @@
 
 #include <vector>
 
-Memory::Memory(const size_t size)
+Memory::Memory(const size_t size): size(size), memory(new uint8_t[size])
 {
-  this->size = size;
-  this->memory = new uint8_t[size];
   memset(this->memory, 0, size);
 }
 
