@@ -1,7 +1,11 @@
 #include <iostream>
 
+#include "RandomGenerator.h"
+
 int main()
 {
-  std::cout << "Hello, World!" << std::endl;
+  RandomGenerator<uint8_t> g(0,255U);
+  std::cout << static_cast<int>(g.generateRandomValue()) << std::endl;
+
   return 0;
 }
