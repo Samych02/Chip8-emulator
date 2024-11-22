@@ -51,8 +51,16 @@ public:
     return stack[stackPointer.getAddress()];
   }
 
-  [[nodiscard]] size_t getSize() const
+  [[nodiscard]] size_t getCapacity() const
   {
-    return size;
+    return size - stackPointer.getAddress();
   }
+
+  // [[nodiscard]] T get(const size_t index) const
+  // {
+  //   if (isEmpty()) throw std::out_of_range("Empty stack");
+  //   if (index >= stackPointer.getAddress()) throw std::out_of_range("Invalid index");
+  //
+  //   return stack[index];
+  // }
 };

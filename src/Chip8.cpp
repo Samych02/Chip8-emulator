@@ -5,18 +5,25 @@
 #include <iostream>
 
 constexpr unsigned int RAM_SIZE = 4 * 1024;
-constexpr unsigned int GRAPHIC_SIZE = 32 * 64;
+constexpr unsigned int GRAPHIC_WIDTH = 64;
+constexpr unsigned int GRAPHIC_HEIGHT = 32;
 constexpr unsigned int STACK_SIZE = 16;
 constexpr unsigned int STARTING_ADDRESS = 0x200;
 constexpr unsigned int FONT_SET_START_ADDRESS = 0x50;
 
 
-Chip8::Chip8(): memory(RAM_SIZE),
-                graphic(GRAPHIC_SIZE),
-                programCounter("Program counter", STARTING_ADDRESS),
-                stack(STACK_SIZE),
-                random(0, 255)
+Chip8::Chip8():
+  memory(RAM_SIZE),
+  graphic(GRAPHIC_WIDTH, GRAPHIC_HEIGHT),
+  programCounter("Program counter", STARTING_ADDRESS),
+  index("Index register"),
+  stack(STACK_SIZE),
+  random(0, 255)
 {
+  for (int i = 0; i < registers.size(); ++i)
+  {
+    registers[i] = Register<uint8_t>("CPU register", 0);
+  }
 }
 
 Chip8::~Chip8()
@@ -94,5 +101,159 @@ void Chip8::OP_2nnn()
   programCounter.setAddress(opcode & 0x0FFFu);
 }
 
+void Chip8::OP_3xkk()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t kk = opcode & 0x00FFu;
 
+  if (registers[Vx] == kk) programCounter.incrementBy(2);
+}
 
+void Chip8::OP_4xkk()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t kk = opcode & 0x00FFu;
+
+  if (registers[Vx] != kk) programCounter.incrementBy(2);
+}
+
+void Chip8::OP_5xy0()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  if (registers[Vx] == registers[Vy]) programCounter.incrementBy(2);
+}
+
+void Chip8::OP_6xkk()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t kk = opcode & 0x00FFu;
+
+  registers[Vx].setAddress(kk);
+}
+
+void Chip8::OP_7xkk()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t kk = opcode & 0x00FFu;
+
+  registers[Vx] = registers[Vx].getAddress() + kk;
+}
+
+void Chip8::OP_8xy0()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  registers[Vx] = registers[Vy];
+}
+
+void Chip8::OP_8xy1()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  registers[Vx] |= registers[Vy].getAddress();
+}
+
+void Chip8::OP_8xy2()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  registers[Vx] &= registers[Vy];
+}
+
+void Chip8::OP_8xy3()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  registers[Vx] ^= registers[Vy];
+}
+
+void Chip8::OP_8xy4()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  const uint16_t sum = registers[Vx].getAddress() + registers[Vy].getAddress();
+
+  if (sum > 0xFFu) registers[0xFu].setAddress(1);
+  else registers[0xFu].setAddress(0);
+
+  registers[Vx].setAddress(static_cast<uint8_t>(sum & 0x00FFu));
+}
+
+void Chip8::OP_8xy5()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  if (registers[Vx] > registers[Vy]) registers[0xFu].setAddress(1);
+  else registers[0xFu].setAddress(0);
+
+  registers[Vx] -= registers[Vy];
+}
+
+void Chip8::OP_8xy6()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+
+  registers[0xFu].setAddress(registers[Vx].getAddress() & 0x1u);
+
+  registers[Vx] >>= 1;
+}
+
+void Chip8::OP_8xy7()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  if (registers[Vy] > registers[Vx]) registers[0xFu].setAddress(1);
+  else registers[0xFu].setAddress(0);
+
+  registers[Vx] -= registers[Vy];
+}
+
+void Chip8::OP_8xyE()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+
+  registers[0xFu].setAddress((registers[Vx].getAddress() & 0x80u) >> 7u);
+
+  registers[Vx] <<= 1;
+}
+
+void Chip8::OP_9xy0()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+
+  if (registers[Vx] != registers[Vy]) programCounter.incrementBy(2);
+}
+
+void Chip8::OP_Annn()
+{
+  index.setAddress(opcode & 0x0FFFu);
+}
+
+void Chip8::OP_Bnnn()
+{
+  programCounter.setAddress((opcode & 0x0FFFu) + registers[0x0u].getAddress());
+}
+
+void Chip8::OP_Cxkk()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t kk = opcode & 0x00FFu;
+
+  registers[Vx] = kk & random.generateRandomValue();
+}
+
+void Chip8::OP_Dxyn()
+{
+  uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+}

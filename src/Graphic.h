@@ -5,11 +5,14 @@
 template <typename T>
 class Graphic
 {
+  size_t width;
+  size_t height;
   size_t size;
   T* buffer;
 
 public:
-  explicit Graphic(const size_t size) : size(size), buffer(new T[size])
+  explicit Graphic(const size_t width, const size_t height) : width(width), height(height), size(width * height),
+                                                              buffer(new T[size])
   {
     memset(this->buffer, 0, sizeof(T) * size);
   }

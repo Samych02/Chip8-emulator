@@ -10,8 +10,13 @@ class Register
   T address;
 
 public:
-  explicit Register(std::string  registerName) : registerName(std::move(registerName)), address(0) {}
-  explicit Register(std::string   registerName, T address): registerName(std::move(registerName)), address(address){}
+  explicit Register(std::string registerName) : registerName(std::move(registerName)), address(0)
+  {
+  }
+
+  explicit Register(std::string registerName, T address): registerName(std::move(registerName)), address(address)
+  {
+  }
 
   void setAddress(T address)
   {
@@ -22,20 +27,185 @@ public:
   {
     return this->address;
   }
+
   void increment()
   {
     ++this->address;
   }
+
   void incrementBy(T size)
   {
     this->address += size;
   }
+
   void decrement()
   {
     --this->address;
   }
+
   void decrementBy(T size)
   {
     this->address -= size;
+  }
+
+  Register& operator=(const T value)
+  {
+    this->address == value;
+
+    return *this;
+  }
+
+  Register& operator=(const Register& value)
+  {
+    if (this == &value) return *this;
+    this->address == value.getAddress();
+
+    return *this;
+  }
+
+  Register& operator-=(const T& value)
+  {
+    this->address -= value;
+
+    return *this;
+  }
+
+  Register& operator-=(const Register& value)
+  {
+    this->address -= value.getAddress();
+
+    return *this;
+  }
+
+  Register& operator/=(const T& value)
+  {
+    this->address -= value;
+
+    return *this;
+  }
+
+  Register& operator/=(const Register& value)
+  {
+    this->address -= value.getAddress();
+
+    return *this;
+  }
+
+  Register& operator|=(const T& value)
+  {
+    this->address |= value;
+
+    return *this;
+  }
+
+  Register& operator|=(const Register& value)
+  {
+    this->address |= value.getAddress();
+
+    return *this;
+  }
+
+  Register& operator&=(const T& value)
+  {
+    this->address &= value;
+
+    return *this;
+  }
+
+  Register& operator&=(const Register& value)
+  {
+    this->address &= value.getAddress();
+
+    return *this;
+  }
+
+  Register& operator^=(const T& value)
+  {
+    this->address &= value;
+
+    return *this;
+  }
+
+  Register& operator^=(const Register& value)
+  {
+    this->address &= value.getAddress();
+
+    return *this;
+  }
+
+  Register& operator>>=(const uint shift)
+  {
+    this->address >>= shift;
+
+    return *this;
+  }
+
+  Register& operator<<=(const uint shift)
+  {
+    this->address <<= shift;
+
+    return *this;
+  }
+
+  bool operator==(const T& value) const
+  {
+    return this->address == value;
+  }
+
+  bool operator==(const Register& value) const
+  {
+    return this->address == value.getAddress();
+  }
+
+
+  bool operator!=(const T& value) const
+  {
+    return this->address != value;
+  }
+
+  bool operator!=(const Register& value) const
+  {
+    return this->address != value.getAddress();
+  }
+
+
+  bool operator>(const T& value) const
+  {
+    return this->address > value;
+  }
+
+  bool operator>(const Register& value) const
+  {
+    return this->address > value.getAddress();
+  }
+
+  bool operator<(const T& value) const
+  {
+    return this->address < value;
+  }
+
+  bool operator<(const Register& value) const
+  {
+    return this->address < value.getAddress();
+  }
+
+  bool operator>=(const T& value) const
+  {
+    return this->address >= value;
+  }
+
+  bool operator>=(const Register& value) const
+  {
+    return this->address >= value.getAddress();
+  }
+
+  bool operator<=(const T& value) const
+  {
+    return this->address <= value;
+  }
+
+  bool operator<=(const Register& value) const
+  {
+    return this->address <= value.getAddress();
   }
 };
