@@ -10,6 +10,10 @@ class Register
   T address;
 
 public:
+  Register()
+  {
+  }
+
   explicit Register(std::string registerName) : registerName(std::move(registerName)), address(0)
   {
   }
@@ -50,7 +54,7 @@ public:
 
   Register& operator=(const T value)
   {
-    this->address == value;
+    this->address = value;
 
     return *this;
   }
@@ -58,7 +62,7 @@ public:
   Register& operator=(const Register& value)
   {
     if (this == &value) return *this;
-    this->address == value.getAddress();
+    this->address = value.getAddress();
 
     return *this;
   }

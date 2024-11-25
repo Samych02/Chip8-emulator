@@ -9,9 +9,9 @@
 
 class Chip8
 {
-  std::array<Register<uint8_t>, 16> registers{};
+  std::array<Register<uint8_t>, 16> registers = {};
   Memory<uint8_t> memory;
-  Graphic<uint32_t> graphic;
+  Graphic<uint8_t> graphic;
   Register<uint16_t> programCounter;
   Register<uint16_t> index;
   Stack<uint16_t> stack;

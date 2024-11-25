@@ -49,20 +49,20 @@ public:
     return this->memory[address];
   }
 
-  [[nodiscard]] uint16_t Memory::readWord(const size_t address) const
+  [[nodiscard]] uint16_t readWord(const size_t address) const
   {
     if (address + 1 >= this->size) throw std::out_of_range("Address out of range");
     return (static_cast<uint16_t>(this->memory[address]) << 8) | this->memory[address + 1];
   }
 
-  std::vector<T> Memory::readBytes(const size_t address, const size_t length) const
+  std::vector<T> readBytes(const size_t startingAddress, const size_t length) const
   {
-    if (address + length >= this->size) throw std::out_of_range("Address out of range");
+    if (startingAddress + length >= this->size) throw std::out_of_range("Address out of range");
     std::vector<T> result;
     result.reserve(length);
     for (size_t i = 0; i < length; i++)
     {
-      result.push_back(this->memory[address + i]);
+      result.push_back(this->memory[startingAddress + i]);
     }
     return result;
   }};
