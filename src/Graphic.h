@@ -48,8 +48,8 @@ public:
   // then we set Vf to 1 for collision detection
   void drawSprite(size_t Vx, size_t Vy, std::vector<T>& sprite, Register<uint8_t> VF)
   {
-    size_t posX = Vx % this->width;
-    size_t posY = Vy % this->height;
+    const size_t posX = Vx % this->width;
+    const size_t posY = Vy % this->height;
 
     for (int spriteRowIndex = 0; spriteRowIndex < sprite.size(); ++spriteRowIndex)
     {

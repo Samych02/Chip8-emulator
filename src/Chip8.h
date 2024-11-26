@@ -2,6 +2,7 @@
 #include <cstdint>
 
 #include "Graphic.h"
+#include "keypad.h"
 #include "Memory.h"
 #include "RandomGenerator.h"
 #include "Register.h"
@@ -14,7 +15,10 @@ class Chip8
   Graphic<uint8_t> graphic;
   Register<uint16_t> programCounter;
   Register<uint16_t> index;
+  Register<uint8_t> delayTimer;
+  Register<uint8_t> soundTimer;
   Stack<uint16_t> stack;
+  Keypad keypad;
   RandomGenerator<uint8_t> random;
   uint16_t opcode = 0;
 
@@ -101,4 +105,36 @@ public:
   // be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside
   // the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3
   void OP_Dxyn();
+
+  // Skip next instruction if key with the value of Vx is pressed.
+  void OP_Ex9e();
+
+  // Skip next instruction if key with the value of Vx is not pressed.
+  void OP_ExA1();
+
+  // Set Vx = delay timer value
+  void OP_Fx07();
+
+  // Wait for a key press, store the value of the key in Vx
+  void OP_Fx0A();
+
+  // Set delay timer = Vx
+  void OP_Fx15();
+
+  // Set sound timer = Vx
+  void OP_Fx18();
+
+  // Set I = I + Vx
+  void OP_Fx1E();
+
+  // Set I = location of sprite for digit Vx
+  void OP_Fx29();
+
+  // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
+  void OP_Fx33() const;
+
+  // Store registers V0 through Vx in memory starting at location I
+  void OP_Fx55() const;
+  // Read registers V0 through Vx from memory starting at location I
+  void OP_Fx65();
 };

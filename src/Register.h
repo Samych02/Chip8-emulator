@@ -67,6 +67,20 @@ public:
     return *this;
   }
 
+  Register& operator+=(const T& value)
+  {
+    this->address += value;
+
+    return *this;
+  }
+
+  Register& operator+=(const Register& value)
+  {
+    this->address += value.getAddress();
+
+    return *this;
+  }
+
   Register& operator-=(const T& value)
   {
     this->address -= value;

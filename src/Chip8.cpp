@@ -18,6 +18,8 @@ Chip8::Chip8():
   programCounter("Program counter", STARTING_ADDRESS),
   index("Index register"),
   stack(STACK_SIZE),
+  delayTimer("Delay timer", 0),
+  soundTimer("Sound Timer", 0),
   random(0, 255)
 {
   for (int i = 0; i < registers.size(); ++i)
@@ -87,180 +89,266 @@ void Chip8::OP_00E0() const
 
 void Chip8::OP_00EE()
 {
-  programCounter.setAddress(stack.top());
+  programCounter = stack.top();
 }
 
 void Chip8::OP_1nnn()
 {
-  programCounter.setAddress(opcode & 0x0FFFu);
+  programCounter = opcode & 0x0FFFu;
 }
 
 void Chip8::OP_2nnn()
 {
   stack.push(programCounter.getAddress());
-  programCounter.setAddress(opcode & 0x0FFFu);
+  programCounter = opcode & 0x0FFFu;
 }
 
 void Chip8::OP_3xkk()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
   const uint8_t kk = opcode & 0x00FFu;
 
-  if (registers[Vx] == kk) programCounter.incrementBy(2);
+  if (Vx == kk) programCounter.incrementBy(2);
 }
 
 void Chip8::OP_4xkk()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
   const uint8_t kk = opcode & 0x00FFu;
 
-  if (registers[Vx] != kk) programCounter.incrementBy(2);
+  if (Vx != kk) programCounter.incrementBy(2);
 }
 
 void Chip8::OP_5xy0()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  if (registers[Vx] == registers[Vy]) programCounter.incrementBy(2);
+  if (Vx == Vy) programCounter.incrementBy(2);
 }
 
 void Chip8::OP_6xkk()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
   const uint8_t kk = opcode & 0x00FFu;
 
-  registers[Vx].setAddress(kk);
+  Vx = kk;
 }
 
 void Chip8::OP_7xkk()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
   const uint8_t kk = opcode & 0x00FFu;
 
-  registers[Vx] = registers[Vx].getAddress() + kk;
+  Vx += kk;
 }
 
 void Chip8::OP_8xy0()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  registers[Vx] = registers[Vy];
+  Vx = Vy;
 }
 
 void Chip8::OP_8xy1()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  registers[Vx] |= registers[Vy].getAddress();
+  Vx |= Vy;
 }
 
 void Chip8::OP_8xy2()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  registers[Vx] &= registers[Vy];
+  Vx &= Vy;
 }
 
 void Chip8::OP_8xy3()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  registers[Vx] ^= registers[Vy];
+  Vx ^= Vy;
 }
 
 void Chip8::OP_8xy4()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  const uint16_t sum = registers[Vx].getAddress() + registers[Vy].getAddress();
+  const uint16_t sum = Vx.getAddress() + Vy.getAddress();
 
-  if (sum > 0xFFu) registers[0xFu].setAddress(1);
-  else registers[0xFu].setAddress(0);
+  registers[0xFu] = sum > 0xFFu;
 
-  registers[Vx].setAddress(static_cast<uint8_t>(sum & 0x00FFu));
+  Vx = static_cast<uint8_t>(sum & 0x00FFu);
 }
 
 void Chip8::OP_8xy5()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  if (registers[Vx] > registers[Vy]) registers[0xFu].setAddress(1);
-  else registers[0xFu].setAddress(0);
-
-  registers[Vx] -= registers[Vy];
+  registers[0xFu] = Vx > Vy;
+  Vx -= Vy;
 }
 
 void Chip8::OP_8xy6()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
 
-  registers[0xFu].setAddress(registers[Vx].getAddress() & 0x1u);
+  registers[0xFu] = Vx.getAddress() & 0x1u;
 
-  registers[Vx] >>= 1;
+  Vx >>= 1;
 }
 
 void Chip8::OP_8xy7()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  if (registers[Vy] > registers[Vx]) registers[0xFu].setAddress(1);
-  else registers[0xFu].setAddress(0);
+  registers[0xFu] = Vy > Vx;
 
-  registers[Vx] -= registers[Vy];
+  Vx -= Vy;
 }
 
 void Chip8::OP_8xyE()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
 
-  registers[0xFu].setAddress((registers[Vx].getAddress() & 0x80u) >> 7u);
+  registers[0xFu] = ((Vx.getAddress() & 0x80u) >> 7u);
 
-  registers[Vx] <<= 1;
+  Vx <<= 1;
 }
 
 void Chip8::OP_9xy0()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
 
-  if (registers[Vx] != registers[Vy]) programCounter.incrementBy(2);
+  if (Vx != Vy) programCounter.incrementBy(2);
 }
 
 void Chip8::OP_Annn()
 {
-  index.setAddress(opcode & 0x0FFFu);
+  index = opcode & 0x0FFFu;
 }
 
 void Chip8::OP_Bnnn()
 {
-  programCounter.setAddress((opcode & 0x0FFFu) + registers[0x0u].getAddress());
+  programCounter = (opcode & 0x0FFFu) + registers[0x0u].getAddress();
 }
 
 void Chip8::OP_Cxkk()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
   const uint8_t kk = opcode & 0x00FFu;
 
-  registers[Vx] = kk & random.generateRandomValue();
+  Vx = kk & random.generateRandomValue();
 }
 
 void Chip8::OP_Dxyn()
 {
-  const uint8_t Vx = (opcode & 0x0F00u) >> 8u;
-  const uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  const Register<uint8_t>& Vy = registers[(opcode & 0x00F0u) >> 4u];
   const uint8_t height = opcode & 0x000Fu;
 
   std::vector<uint8_t> sprite = memory.readBytes(index.getAddress(), height);
-  graphic.drawSprite(Vx, Vy, sprite, registers[15]);
+  graphic.drawSprite(Vx.getAddress(), Vy.getAddress(), sprite, registers[15]);
+}
 
+void Chip8::OP_Ex9e()
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
 
+  if (keypad.isPressed(Vx.getAddress())) programCounter.incrementBy(2);
+}
 
+void Chip8::OP_ExA1()
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  if (!keypad.isPressed(Vx.getAddress())) programCounter.incrementBy(2);
+}
+
+void Chip8::OP_Fx07()
+{
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  Vx = delayTimer;
+}
+
+void Chip8::OP_Fx0A()
+{
+  Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+  while (true)
+  {
+    for (int i = 0; i < 16; ++i)
+    {
+      if (keypad.isPressed(i))
+      {
+        Vx = i;
+        return;
+      }
+    }
+  }
+}
+
+void Chip8::OP_Fx15()
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  delayTimer = Vx;
+}
+
+void Chip8::OP_Fx18()
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  soundTimer = Vx;
+}
+
+void Chip8::OP_Fx1E()
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  index += Vx.getAddress();
+}
+
+void Chip8::OP_Fx29()
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  // each digit sprite is 5 bytes
+  index = FONT_SET_START_ADDRESS + 5 * Vx.getAddress();
+}
+
+void Chip8::OP_Fx33() const
+{
+  const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
+
+  memory.writeByte(index.getAddress(), Vx.getAddress() / 100);
+  memory.writeByte(index.getAddress() + 1, (Vx.getAddress() / 10) % 10);
+  memory.writeByte(index.getAddress() + 2, Vx.getAddress() % 10);
+}
+
+void Chip8::OP_Fx55() const
+{
+  const uint8_t x = (opcode & 0x0F00u) >> 8u;
+  for (size_t i = 0; i < x; ++i)
+  {
+    memory.writeByte(index.getAddress() + i, registers[i].getAddress());
+  }
+}
+
+void Chip8::OP_Fx65()
+{
+  const uint8_t x = (opcode & 0x0F00u) >> 8u;
+  for (size_t i = 0; i < x; ++i)
+  {
+    registers[i] = memory.readByte(index.getAddress() + i);
+  }
 }
