@@ -2,7 +2,7 @@
 #include <cstdint>
 
 #include "Graphic.h"
-#include "keypad.h"
+#include "Keypad.h"
 #include "Memory.h"
 #include "RandomGenerator.h"
 #include "Register.h"
@@ -23,14 +23,8 @@ class Chip8
   uint16_t opcode = 0;
 
   void loadFont() const;
-
-public:
-  Chip8();
-  ~Chip8();
-  void loadRom(const char* filePath) const;
-
   // Clear the display
-  void OP_00E0() const;
+  void OP_00E0();
 
   // Return from a subroutine
   void OP_00EE();
@@ -107,7 +101,7 @@ public:
   void OP_Dxyn();
 
   // Skip next instruction if key with the value of Vx is pressed.
-  void OP_Ex9e();
+  void OP_Ex9E();
 
   // Skip next instruction if key with the value of Vx is not pressed.
   void OP_ExA1();
@@ -131,10 +125,94 @@ public:
   void OP_Fx29();
 
   // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
-  void OP_Fx33() const;
+  void OP_Fx33();
 
   // Store registers V0 through Vx in memory starting at location I
-  void OP_Fx55() const;
+  void OP_Fx55();
+
   // Read registers V0 through Vx from memory starting at location I
   void OP_Fx65();
+
+  // cannot be set to static be it won't match type Chip8Function
+  void OP_NULL()
+  {
+    /* Handle invalid opcodes */
+  }
+
+  // this type that we are defining (called Chip8Function) is a pointer to a function from class Chip8
+  // this is useful to store pointers of class members inside a table to call these functions using an index.
+  // The syntax is as follows: void is the return type, Chip8 represents the class, Chip8Function is the alias of the created type, and () is the input of the function
+  // up up up: no method shall contain the const or static modifier so we can be able to store them all in the same table
+  // we can use std::function, but it is less performant
+  typedef void (Chip8::*Chip8Function)();
+
+  /*
+  The entire list of opcodes is divided into 4 categories:
+The entire opcode is unique:
+      $1nnn
+      $2nnn
+      $3xkk
+      $4xkk
+      $5xy0
+      $6xkk
+      $7xkk
+      $9xy0
+      $Annn
+      $Bnnn
+      $Cxkk
+      $Dxyn
+  The first digit repeats but the last digit is unique:
+      $8xy0
+      $8xy1
+      $8xy2
+      $8xy3
+      $8xy4
+      $8xy5
+      $8xy6
+      $8xy7
+      $8xyE
+  The first three digits are $00E but the fourth digit is unique:
+      $00E0
+      $00EE
+  The first digit repeats but the last two digits are unique:
+      $ExA1
+      $Ex9E
+      $Fx07
+      $Fx0A
+      $Fx15
+      $Fx18
+      $Fx1E
+      $Fx29
+      $Fx33
+      $Fx55
+      $Fx65
+
+      this division is useful to index the opcodes inside a table
+      for example the ones that are fully unique can be indexed using the 1st nibble (what a funny word) only
+      so if an opcode starts with 1 then we know it is instruction 0x1nnn
+
+      for the opcodes that are not unique we use sub-tables to further identify the intended opcode
+      the 1st nibble of all opcodes goes from 1 to F, which means we will need an array of size F+1
+      the size of other sub-tables is defined in the same way, for example for tableE the last opcode is 0xFx65 so the size is 0x65 + 1
+
+    */
+  Chip8Function table[0xF + 1];
+  Chip8Function table0[0xE + 1];
+  Chip8Function table8[0xE + 1];
+  Chip8Function tableE[0xE + 1];
+  Chip8Function tableF[0x65 + 1];
+
+  // if a nibble starts with 0 then we need to access the table called table0
+  // the task of further decoding the rest of the opcode (for example to decide whether to call $00E0 or $00EE is delegated to function Table0 which will use the last digit to call the appropriate method
+  // refer to the classification of opcodes for the implementation of these methods
+  void Table0();
+  void Table8();
+  void TableE();
+  void TableF();
+
+  void Cycle();
+public:
+  Chip8();
+  ~Chip8();
+  void loadRom(const char* filePath) const;
 };
