@@ -10,7 +10,6 @@ class Register
   T address;
 
 public:
-  // explicit Register() = default;
   explicit Register(std::string registerName, T address): registerName(std::move(registerName)), address(address)
   {
   }
