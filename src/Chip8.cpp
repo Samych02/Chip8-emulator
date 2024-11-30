@@ -6,14 +6,16 @@
 
 
 Chip8::Chip8(const std::string& filePath):
-  registers({Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
-            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u)}), //sry for this bs
+  registers({
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+    Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u)
+  }), //sry for this bs
   memory(RAM_SIZE),
   graphic(GRAPHIC_WIDTH, GRAPHIC_HEIGHT),
   programCounter("Program counter", STARTING_ADDRESS),
@@ -341,18 +343,17 @@ void Chip8::OP_Fx07()
 void Chip8::OP_Fx0A()
 {
   Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
-  while (true)
+  for (uint8_t i = 0; i < 16; ++i)
   {
-    for (int i = 0; i < 16; ++i)
+    if (keypad.isPressed(i))
     {
-      if (keypad.isPressed(i))
-      {
-        Vx = i;
-        return;
-      }
+      Vx = i;
+      return;
     }
   }
+  programCounter.decrementBy(2);
 }
+
 
 void Chip8::OP_Fx15()
 {
