@@ -1,5 +1,15 @@
 {
-  "dependencies": [
-    "sdl2"
-  ]
+  "name" : "chip8",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "7adc2e4d49e8d0efc07a369079faa6bc3dbb90f3",
+  "dependencies" : [ {
+    "name" : "vcpkg-cmake-config",
+    "version>=" : "2024-05-23"
+  }, {
+    "name" : "vcpkg-cmake",
+    "version>=" : "2024-04-23"
+  }, {
+    "name" : "sdl2",
+    "version>=" : "2.30.8"
+  } ]
 }
