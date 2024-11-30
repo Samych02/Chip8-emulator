@@ -136,9 +136,9 @@ bool PlatformSDL::ProcessInput(Keypad& keypad)
       case SDLK_v:
         keypad.pressKey(0xFu);
         break;
-
-      default: break;
+      default: ;
       }
+      break;
 
     case SDL_KEYUP:
       switch (event.key.keysym.sym)
@@ -206,11 +206,10 @@ bool PlatformSDL::ProcessInput(Keypad& keypad)
       case SDLK_v:
         keypad.releaseKey(0xFu);
         break;
-
-      default: break;
+      default: ;
       }
-
-    default: break;
+      break;
+    default: ;
     }
   }
 
