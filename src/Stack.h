@@ -12,7 +12,7 @@ class Stack
   Register<uint8_t> stackPointer;
 
 public:
-  explicit Stack(const size_t size): size(size), stack(new T[size]), stackPointer("Stack pointer")
+  explicit Stack(const size_t size): size(size), stack(new T[size]), stackPointer("Stack pointer" , 0x0u)
   {
   }
 
