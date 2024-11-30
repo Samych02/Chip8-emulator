@@ -4,29 +4,28 @@
 #include <fstream>
 #include <iostream>
 
-constexpr unsigned int RAM_SIZE = 4 * 1024;
-constexpr unsigned int GRAPHIC_WIDTH = 64;
-constexpr unsigned int GRAPHIC_HEIGHT = 32;
-constexpr unsigned int STACK_SIZE = 16;
-constexpr unsigned int STARTING_ADDRESS = 0x200;
-constexpr unsigned int FONT_SET_START_ADDRESS = 0x50;
 
-
-Chip8::Chip8():
+Chip8::Chip8(const std::string& filePath):
+  registers({Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u),
+            Register<uint8_t>("CPU register", 0x0u), Register<uint8_t>("CPU register", 0x0u)}), //sry for this bs
   memory(RAM_SIZE),
   graphic(GRAPHIC_WIDTH, GRAPHIC_HEIGHT),
   programCounter("Program counter", STARTING_ADDRESS),
-  index("Index register"),
+  index("Index register", 0),
   delayTimer("Delay timer", 0),
   soundTimer("Sound Timer", 0),
   stack(STACK_SIZE),
-  random(0, 255)
+  random(0, 255),
+  opcode(0)
 {
-  for (int i = 0; i < registers.size(); ++i)
-  {
-    registers[i] = Register<uint8_t>("CPU register", 0);
-  }
-
+  loadRom(filePath);
+  loadFont();
   // Set up function pointer table
   table[0x0] = &Chip8::Table0;
   table[0x1] = &Chip8::OP_1nnn;
@@ -51,9 +50,10 @@ Chip8::Chip8():
     table0[i] = &Chip8::OP_NULL;
     table8[i] = &Chip8::OP_NULL;
     tableE[i] = &Chip8::OP_NULL;
+    tableF[i] = &Chip8::OP_NULL;
   }
 
-  for (size_t i = 0; i < 0x65 + 1; ++i)
+  for (size_t i = 0xE + 2; i < 0x65 + 1; ++i)
   {
     tableF[i] = &Chip8::OP_NULL;
   }
@@ -88,7 +88,7 @@ Chip8::Chip8():
 Chip8::~Chip8()
 = default;
 
-void Chip8::loadRom(const char* filePath) const
+void Chip8::loadRom(const std::string& filePath) const
 {
   // set file path
   const std::filesystem::path path = filePath;
@@ -108,7 +108,7 @@ void Chip8::loadRom(const char* filePath) const
   // reading rom bytes and transferring it to ram
   std::vector<uint8_t> bytes(fileSize);
   file.read(reinterpret_cast<std::istream::char_type*>(bytes.data()), static_cast<long>(fileSize));
-  this->memory.writeBytes(STARTING_ADDRESS, bytes);
+  memory.writeBytes(STARTING_ADDRESS, bytes);
 
   file.close();
 }
@@ -136,17 +136,17 @@ void Chip8::loadFont() const
     0xF0, 0x80, 0xF0, 0x80, 0x80 // F
   };
 
-  this->memory.writeBytes(FONT_SET_START_ADDRESS, fontSet);
+  memory.writeBytes(FONT_SET_START_ADDRESS, fontSet);
 }
 
 void Chip8::OP_00E0()
 {
-  this->graphic.Clear();
+  graphic.Clear();
 }
 
 void Chip8::OP_00EE()
 {
-  programCounter = stack.top();
+  programCounter = stack.pop();
 }
 
 void Chip8::OP_1nnn()
@@ -387,15 +387,19 @@ void Chip8::OP_Fx33()
 {
   const Register<uint8_t>& Vx = registers[(opcode & 0x0F00u) >> 8u];
 
-  memory.writeByte(index.getAddress(), Vx.getAddress() / 100);
-  memory.writeByte(index.getAddress() + 1, (Vx.getAddress() / 10) % 10);
-  memory.writeByte(index.getAddress() + 2, Vx.getAddress() % 10);
+  uint8_t value = Vx.getAddress();
+
+  memory.writeByte(index.getAddress() + 0x2u, value % 10);
+  value /= 10;
+  memory.writeByte(index.getAddress() + 0x1u, value % 10);
+  value /= 10;
+  memory.writeByte(index.getAddress(), value % 10);
 }
 
 void Chip8::OP_Fx55()
 {
   const uint8_t x = (opcode & 0x0F00u) >> 8u;
-  for (size_t i = 0; i < x; ++i)
+  for (uint8_t i = 0; i < x + 1; ++i)
   {
     memory.writeByte(index.getAddress() + i, registers[i].getAddress());
   }
@@ -404,7 +408,7 @@ void Chip8::OP_Fx55()
 void Chip8::OP_Fx65()
 {
   const uint8_t x = (opcode & 0x0F00u) >> 8u;
-  for (size_t i = 0; i < x; ++i)
+  for (size_t i = 0; i < x + 1; ++i)
   {
     registers[i] = memory.readByte(index.getAddress() + i);
   }
@@ -449,4 +453,14 @@ void Chip8::Cycle()
   {
     soundTimer.decrement();
   }
+}
+
+Keypad& Chip8::getKeypad()
+{
+  return keypad;
+}
+
+const uint32_t* Chip8::getBuffer() const
+{
+  return graphic.getBuffer();
 }

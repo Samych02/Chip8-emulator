@@ -8,11 +8,18 @@
 #include "Register.h"
 #include "Stack.h"
 
+constexpr unsigned int RAM_SIZE = 4 * 1024;
+constexpr unsigned int GRAPHIC_WIDTH = 64;
+constexpr unsigned int GRAPHIC_HEIGHT = 32;
+constexpr unsigned int STACK_SIZE = 16;
+constexpr unsigned int STARTING_ADDRESS = 0x200;
+constexpr unsigned int FONT_SET_START_ADDRESS = 0x50;
+
 class Chip8
 {
-  std::array<Register<uint8_t>, 16> registers = {};
+  std::array<Register<uint8_t>, 16> registers;
   Memory<uint8_t> memory;
-  Graphic<uint8_t> graphic;
+  Graphic<uint32_t> graphic;
   Register<uint16_t> programCounter;
   Register<uint16_t> index;
   Register<uint8_t> delayTimer;
@@ -20,9 +27,12 @@ class Chip8
   Stack<uint16_t> stack;
   Keypad keypad;
   RandomGenerator<uint8_t> random;
-  uint16_t opcode = 0;
+  uint16_t opcode;
 
   void loadFont() const;
+
+  void loadRom(const std::string& filePath) const;
+
   // Clear the display
   void OP_00E0();
 
@@ -196,11 +206,11 @@ The entire opcode is unique:
       the size of other sub-tables is defined in the same way, for example for tableE the last opcode is 0xFx65 so the size is 0x65 + 1
 
     */
-  Chip8Function table[0xF + 1];
-  Chip8Function table0[0xE + 1];
-  Chip8Function table8[0xE + 1];
-  Chip8Function tableE[0xE + 1];
-  Chip8Function tableF[0x65 + 1];
+  Chip8Function table[0xF + 1]{};
+  Chip8Function table0[0xE + 1]{};
+  Chip8Function table8[0xE + 1]{};
+  Chip8Function tableE[0xE + 1]{};
+  Chip8Function tableF[0x65 + 1]{};
 
   // if a nibble starts with 0 then we need to access the table called table0
   // the task of further decoding the rest of the opcode (for example to decide whether to call $00E0 or $00EE is delegated to function Table0 which will use the last digit to call the appropriate method
@@ -210,9 +220,10 @@ The entire opcode is unique:
   void TableE();
   void TableF();
 
-  void Cycle();
 public:
-  Chip8();
+  explicit Chip8(const std::string& filePath);
   ~Chip8();
-  void loadRom(const char* filePath) const;
+  Keypad& getKeypad();
+  void Cycle();
+  [[nodiscard]] const uint32_t* getBuffer() const;
 };
